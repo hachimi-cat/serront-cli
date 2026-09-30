@@ -1,6 +1,6 @@
 {
   "name": "@forjio/serront-cli",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "CLI for Serront (part of the Forjio commerce suite).",
   "type": "module",
   "main": "dist/index.js",

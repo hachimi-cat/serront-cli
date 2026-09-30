@@ -1,13 +1,13 @@
-import { loadSession, isAccessTokenStale } from './session.js';
+import { CredentialsError, resolveBearer } from './credentials.js';
 
 /**
  * Thin Bearer-auth API helper for CLI commands.
  *
- * Token resolution order:
- *   1. `SERRONT_TOKEN` env (explicit override, CI-friendly — use an
- *      sk_live_… API key from Dashboard → Settings → API keys)
- *   2. the Huudis access token stored by `auth login`
- *      (~/.serront/session.json) — used as Bearer against serront.com.
+ * Token resolution order (lib/credentials.ts):
+ *   1. `SERRONT_TOKEN` env (explicit override, CI-friendly — an sk_live_… API key)
+ *   2. the API key saved by `serront auth login --api-key <key>`
+ *   3. the Huudis session saved by `serront auth login` (~/.serront/session.json),
+ *      refreshed when it is about to expire.
  *
  * Unwraps the Forjio `{ data, error, meta }` envelope and throws
  * `CliApiError` carrying the envelope's `error.code`.
@@ -31,25 +31,22 @@ export function baseUrl(): string {
   return (process.env.SERRONT_BASE_URL ?? 'https://serront.com').replace(/\/+$/, '');
 }
 
-export function resolveToken(): string {
-  const envToken = process.env.SERRONT_TOKEN;
-  if (envToken) return envToken;
-  const session = loadSession();
-  if (!session) {
+export async function resolveToken(): Promise<string> {
+  let resolved;
+  try {
+    resolved = await resolveBearer();
+  } catch (e) {
+    if (e instanceof CredentialsError) throw new CliApiError(0, e.code, e.message);
+    throw e;
+  }
+  if (!resolved) {
     throw new CliApiError(
       0,
       'AUTH_REQUIRED',
-      'Not signed in. Run `serront auth login` or set SERRONT_TOKEN.',
+      'Not signed in. Run `serront auth login` (or `serront auth login --api-key <key>`), or set SERRONT_TOKEN.',
     );
   }
-  if (isAccessTokenStale(session)) {
-    throw new CliApiError(
-      0,
-      'TOKEN_EXPIRED',
-      'Session expired. Run `serront auth login` again (or set SERRONT_TOKEN).',
-    );
-  }
-  return session.accessToken;
+  return resolved.token;
 }
 
 interface Envelope<T> {
@@ -63,7 +60,7 @@ export async function apiRequest<T>(
   path: string,
   opts: { body?: unknown; query?: Record<string, string | number | undefined> } = {},
 ): Promise<T> {
-  const token = resolveToken();
+  const token = await resolveToken();
   const url = new URL(baseUrl() + path);
   for (const [k, v] of Object.entries(opts.query ?? {})) {
     if (v !== undefined) url.searchParams.set(k, String(v));
