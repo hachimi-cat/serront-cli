@@ -11,7 +11,7 @@ const brand = process.env.SERRONT ?? 'serront';
 const program = new Command()
   .name(brand)
   .description(`CLI for ${brand} — part of the Forjio commerce suite.`)
-  .version('0.2.0');
+  .version('0.3.0');
 
 program.addCommand(auth);
 program.addCommand(storefront);

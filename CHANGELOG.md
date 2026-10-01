@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+- `serront api webhook-subscriptions deliveries` (`--subscription-id`, `--status`, `--type`, `--limit`, `--cursor`), `get-deliveries <id>`, `deliveries-retry <id>` and `event-types`: the webhook delivery log, with every attempt, and a retry.
+- `serront api webhook-subscriptions update <id>` takes `--url` and `--events` too (it only took `--active`).
+
 ## 0.2.0
 - A route read by id next to its list is named `get` + the list's name: `serront api client get-orders` (was `serront api client orders-2`), `serront api fulfillment get-deliveries` (was `serront api fulfillment deliveries-2`), `serront api fulfillment get-shipments` (was `serront api fulfillment shipments-2`), `serront api public get-storefront-blog` (was `serront api public storefront-blog-2`). Each old name still works, hidden from help.
 - Query fields the API refuses a request without are now required: `key` on GET /api/v1/fulfillment/licenses/validate.
